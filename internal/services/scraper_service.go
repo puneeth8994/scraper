@@ -22,8 +22,10 @@ func InitializeScrape(urlFile string) {
 		if err != nil {
 			log.Fatalf("Error reading URLs from file: %v", err)
 		}
-		core.ConcurrentScrapingWithRateLimit(urls)
+		// Limit: 1 request per second, burst size of 2
+		core.ConcurrentScrapingWithRateLimit(urls, 1, 2)
 	} else {
-		core.ConcurrentScrapingWithRateLimit(defaultScrapeURL)
+		// Limit: 1 request per second, burst size of 2
+		core.ConcurrentScrapingWithRateLimit(defaultScrapeURL, 1, 2)
 	}
 }

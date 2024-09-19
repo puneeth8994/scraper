@@ -54,6 +54,11 @@ func scrapeHTML(url string) (string, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		fmt.Println("non 2xx returned")
+		return "", errors.New("Non 2xx response received")
+	}
+
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
 		return "", err
@@ -133,10 +138,12 @@ func readURLsFromFile(filename string) ([]string, error) {
 }
 
 // ConcurrentScrapingWithRateLimit helps parse http responses concurrently and also applies rate Limiting
-func ConcurrentScrapingWithRateLimit(urls []string) {
+func ConcurrentScrapingWithRateLimit(urls []string, rateValue rate.Limit, burstSize int) map[string]string {
 	var wg sync.WaitGroup
-	limiter := rate.NewLimiter(1, 2) // Limit: 1 request per second, burst size of 2
+	limiter := rate.NewLimiter(rateValue, burstSize)
 
+	results := map[string]string{}
+	var mu sync.Mutex // To protect the shared results map
 	for _, url := range urls {
 		wg.Add(1)
 
@@ -146,23 +153,34 @@ func ConcurrentScrapingWithRateLimit(urls []string) {
 			// Apply rate limiting
 			limiter.Wait(context.Background())
 
+			var title string
+			var err error
 			if strings.HasSuffix(url, ".json") {
-				title, err := scrapeJSON(url)
+				title, err = scrapeJSON(url)
 				if err != nil {
 					fmt.Println("Error scraping JSON:", err)
 				} else {
 					fmt.Println("Scraped JSON Title:", title)
 				}
 			} else if strings.HasSuffix(url, ".html") {
-				title, err := scrapeHTML(url)
+				title, err = scrapeHTML(url)
 				if err != nil {
 					fmt.Println("Error scraping HTML:", err)
 				} else {
 					fmt.Println("Scraped HTML Title:", title)
 				}
 			}
+
+			mu.Lock()
+			if err != nil {
+				results[url] = "Error: " + err.Error()
+			} else {
+				results[url] = title
+			}
+			mu.Unlock()
 		}(url)
 	}
 
 	wg.Wait()
+	return results
 }
