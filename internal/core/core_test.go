@@ -110,7 +110,7 @@ func TestConcurrentScrapingWithRateLimit(t *testing.T) {
 
 	// Test Case 1: Rate Limit = 1 request/sec, Burst Size = 1
 	startTime := time.Now()
-	ConcurrentScrapingWithRateLimit(urls, 1, 1)
+	ConcurrentScrapingWithRateLimit(urls, 1, 1, 2)
 	duration := time.Since(startTime)
 
 	// Ensure that rate limiting was applied correctly (should take ~4 seconds for 4 URLs)
@@ -120,7 +120,7 @@ func TestConcurrentScrapingWithRateLimit(t *testing.T) {
 
 	// Test Case 2: Rate Limit = 1 request/sec, Burst Size = 2
 	startTime = time.Now()
-	ConcurrentScrapingWithRateLimit(urls, 1, 2)
+	ConcurrentScrapingWithRateLimit(urls, 1, 2, 2)
 	duration = time.Since(startTime)
 
 	// Ensure that rate limiting was applied correctly (should take ~2 seconds due to burst size)

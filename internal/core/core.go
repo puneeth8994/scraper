@@ -138,18 +138,19 @@ func readURLsFromFile(filename string) ([]string, error) {
 }
 
 // ConcurrentScrapingWithRateLimit helps parse http responses concurrently and also applies rate Limiting
-func ConcurrentScrapingWithRateLimit(urls []string, rateValue rate.Limit, burstSize int) map[string]string {
+func ConcurrentScrapingWithRateLimit(urls []string, rateValue rate.Limit, burstSize int, maxGoroutines int) map[string]string {
 	var wg sync.WaitGroup
 	limiter := rate.NewLimiter(rateValue, burstSize)
 
+	// Channel for feeding URLs to workers
+	urlChannel := make(chan string)
 	results := map[string]string{}
 	var mu sync.Mutex // To protect the shared results map
-	for _, url := range urls {
-		wg.Add(1)
 
-		go func(url string) {
-			defer wg.Done()
-
+	// Worker function to process URLs from the channel
+	worker := func() {
+		defer wg.Done()
+		for url := range urlChannel {
 			// Apply rate limiting
 			limiter.Wait(context.Background())
 
@@ -159,18 +160,15 @@ func ConcurrentScrapingWithRateLimit(urls []string, rateValue rate.Limit, burstS
 				title, err = scrapeJSON(url)
 				if err != nil {
 					fmt.Println("Error scraping JSON:", err)
-				} else {
-					fmt.Println("Scraped JSON Title:", title)
 				}
 			} else if strings.HasSuffix(url, ".html") {
 				title, err = scrapeHTML(url)
 				if err != nil {
 					fmt.Println("Error scraping HTML:", err)
-				} else {
-					fmt.Println("Scraped HTML Title:", title)
 				}
 			}
 
+			// Store the result safely using mutex
 			mu.Lock()
 			if err != nil {
 				results[url] = "Error: " + err.Error()
@@ -178,9 +176,30 @@ func ConcurrentScrapingWithRateLimit(urls []string, rateValue rate.Limit, burstS
 				results[url] = title
 			}
 			mu.Unlock()
-		}(url)
+		}
 	}
 
+	// Launch a fixed number of workers (goroutines)
+	wg.Add(maxGoroutines)
+	for i := 0; i < maxGoroutines; i++ {
+		go worker()
+	}
+
+	// Send URLs to the channel
+	for _, url := range urls {
+		urlChannel <- url
+	}
+
+	// Close the channel after all URLs have been sent
+	close(urlChannel)
+
+	// Wait for all workers to finish
 	wg.Wait()
+
+	for key, value := range results {
+		// Do something with key and value
+		fmt.Println("Key:", key, "Value:", value)
+	}
+
 	return results
 }
