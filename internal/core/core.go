@@ -147,6 +147,7 @@ func ConcurrentScrapingWithRateLimit(urls []string, rateValue rate.Limit, burstS
 	results := map[string]string{}
 	var mu sync.Mutex // To protect the shared results map
 
+	// TODO: Implement batching instead of initiating go routing for every URL
 	// Worker function to process URLs from the channel
 	worker := func() {
 		defer wg.Done()
@@ -180,6 +181,7 @@ func ConcurrentScrapingWithRateLimit(urls []string, rateValue rate.Limit, burstS
 	}
 
 	// Launch a fixed number of workers (goroutines)
+	// to prevent OOM issues
 	wg.Add(maxGoroutines)
 	for i := 0; i < maxGoroutines; i++ {
 		go worker()

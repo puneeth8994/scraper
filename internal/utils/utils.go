@@ -16,7 +16,10 @@ func ReadURLsFromFile(filename string) ([]string, error) {
 	var urls []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		urls = append(urls, scanner.Text())
+
+		line := scanner.Text()
+
+		urls = append(urls, line)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err
