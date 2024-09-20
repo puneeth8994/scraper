@@ -167,6 +167,8 @@ func ConcurrentScrapingWithRateLimit(urls []string, rateValue rate.Limit, burstS
 				if err != nil {
 					fmt.Println("Error scraping HTML:", err)
 				}
+			} else {
+				// TODO: Handle XML formats
 			}
 
 			// Store the result safely using mutex
