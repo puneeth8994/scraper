@@ -64,24 +64,9 @@ func scrapeHTML(url string) (string, error) {
 		return "", err
 	}
 
-	// Print the entire HTML node tree to debug structure
-	// fmt.Println("Printing HTML node tree for debugging:")
-	// printHTMLTree(doc, 0)
-
 	title := fetchTitleFromHTML(doc)
 
 	return title, nil
-}
-
-// Function to print the entire HTML node tree (for debugging)
-func printHTMLTree(n *html.Node, depth int) {
-	// Print current node with indentation to indicate depth
-	fmt.Printf("%sNode Type: %d, Data: %s\n", strings.Repeat("  ", depth), n.Type, n.Data)
-
-	// Traverse child nodes (recursive)
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		printHTMLTree(c, depth+1)
-	}
 }
 
 func fetchTitleFromHTML(n *html.Node) string {
